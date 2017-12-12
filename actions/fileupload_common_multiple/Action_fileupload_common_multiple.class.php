@@ -245,6 +245,16 @@ class Action_fileupload_common_multiple extends ActionAbstract {
             }
             ini_set('memory_limit', -1);
             $result = $this->_createNode($file, $idNode, $type, $metadata, $overwrite);
+            
+            // update the templates_include.xsl files if the file is a template
+            if ($result and $type == 'ptd')
+            {
+                $node = new Node($idNode);
+                $xsltNode = new xsltnode($node);
+                if ($xsltNode->reload_templates_include(new Node($node->getProject())) === false)
+                    $result['msg'] = 'File uploaded but the template cannot be added to the templates include file (' . $xsltNode->messages . ')';
+            }
+            
             if (file_exists($path)) {
                 unlink($path);
             }
