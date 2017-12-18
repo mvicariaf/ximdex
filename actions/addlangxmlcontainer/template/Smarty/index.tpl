@@ -24,15 +24,13 @@
  *}
 
 <form method="post" name="alx_form" id="alx_form" action="{$action_url}">
-	<input type="hidden" name="nodeid" value="{$idNode}" class="ecajag">
-	<input type="hidden" name="templateid" value="{$idTemplate}" class="ecajag">
-
+	<input type="hidden" name="nodeid" value="{$idNode}" class="ecajag" />
+	<input type="hidden" name="templateid" value="{$idTemplate}" class="ecajag" />
     <div class="action_header">
 		<h5 class="direction_header"> Name Node: {$node_name}</h5>
 		<h5 class="nodeid_header"> ID Node: {$nodeid}</h5>
-		<hr>
+		<hr />
     </div>
-
 	<div class="action_content">
 		<div class="row tarjeta">
 			<div class="small-12 columns title_tarjeta">
@@ -40,53 +38,58 @@
 			</div>
 			<div class="small-12 columns">
 				<div class="input">
-		    <div class="info-node">
-		  	    <label class="label_title label_general">{t}Used schema{/t}</label>
-				<div class="text-border">
-                <span class="infor_form ">{$templateName}</span>
-				</div></div></div></div>
+			    	<div class="info-node">
+			  	    	<label class="label_title label_general">{t}Used schema{/t}</label>
+						<div class="text-border">
+	    	            	<span class="infor_form ">{$templateName}</span>
+						</div>
+					</div>
+				</div>
+			</div>
 		  	<div class="small-12 columns">
 				<div class="input">
-				<label class="label_title label_general">{t}Available channels{/t}</label>
-		  	{if $numchannels neq 0}
-		 		{foreach from=$channels item=channel}
-		  		    <div class="channel-section">
-		  			    <input type="checkbox" name="channels[]" id="channel_{$channel.IdChannel}_{$idNode}" value="{$channel.IdChannel}" {if ($channel.selected)} checked="checked" {/if} class="hidden-focus">
-		  				<label class="icon checkbox-label" for="channel_{$channel.IdChannel}_{$idNode}">{$channel.Description}</label>
-					</div></div>
-		  		{/foreach}
-		  	{else}
-		  			<p>{t}There aren't any channels associated to this project{/t}.</p>
-		  	{/if}
-		  	</div>	
-
-		  	{if $numlanguages neq 0}
+					<label class="label_title label_general">{t}Available channels{/t}</label>
+		  			{if $numchannels neq 0}
+		 				{foreach from=$channels item=channel}
+		  		    		<div class="channel-section">
+		  			    		<input type="checkbox" name="channels[]" id="channel_{$channel.IdChannel}_{$idNode}" 
+		  			    				value="{$channel.IdChannel}" {if ($channel.selected)} checked="checked" {/if} class="hidden-focus" />
+		  						<label class="icon checkbox-label" for="channel_{$channel.IdChannel}_{$idNode}">{$channel.Description}</label>
+							</div>
+		  				{/foreach}
+		  			{else}
+		  				<p>{t}There aren't any channels associated to this project{/t}.</p>
+		  			{/if}
+		  		</div>
+		  	</div>
 			<div class="small-12 columns">
 				<div class="input">
-				<label class="label_title label_general">{t}Languages availables{/t}</label>
+					<label class="label_title label_general">{t}Languages availables{/t}</label>
+					{if $numlanguages neq 0}
 						{foreach from=$languages item=language}
-				<div class="languages-section">
-				{if ($language.idChildren > 0)}
-                    <input type="checkbox" name="languages[]" id="lang_{$language.idLanguage}_{$idNode}" value="{$language.idLanguage}" checked="checked" class="hidden-focus" />
-				{else}
-					<input type="checkbox" name="languages[]" id="lang_{$language.idLanguage}_{$idNode}" value="{$language.idLanguage}" class= "hidden-focus"/>
-				{/if}
-				<label for="lang_{$language.idLanguage}_{$idNode}" class="icon checkbox-label">{$language.name}</label>
-				<input type="text" name="aliases[{$language.idLanguage}]" class="alternative-name" value="{$language.alias}" class="cajag" placeholder="{t}Alternative name for paths &amp; breadcrumbs{/t}">
-				</div>
+							<div class="languages-section">
+								{if ($language.idChildren > 0)}
+                   					<input type="checkbox" name="languages[]" id="lang_{$language.idLanguage}_{$idNode}" 
+                   							value="{$language.idLanguage}" checked="checked" class="hidden-focus" />
+								{else}
+									<input type="checkbox" name="languages[]" id="lang_{$language.idLanguage}_{$idNode}" 
+											value="{$language.idLanguage}" class= "hidden-focus"/>
+								{/if}
+								<label for="lang_{$language.idLanguage}_{$idNode}" class="icon checkbox-label">{$language.name}</label>
+								<input type="text" name="aliases[{$language.idLanguage}]" class="alternative-name" value="{$language.alias}" 
+										class="cajag" placeholder="{t}Alternative name for paths &amp; breadcrumbs{/t}" />
+							</div>
 						{/foreach}
-					
-				{else}
-					<p>{t}There are no languages associated to this project{/t}.</p>
-				{/if}
-			</div>
+					{else}
+						<p>{t}There are no languages associated to this project{/t}.</p>
+					{/if}
+				</div>
 			</div>
 			<div class="small-12 columns">
 				<fieldset class="buttons-form">
-                    {button label="Modify" class='validate btn main_action' }{*message="Would you like to save changes?"*}
+                   	{button label="Modify" class='validate btn main_action' }{*message="Would you like to save changes?"*}
 				</fieldset>
 			</div>
-	</div>
+		</div>
 	</div>
 </form>
-
