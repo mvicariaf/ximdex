@@ -689,22 +689,16 @@ class Node extends NodesOrm
         {
             if ($this->IsOnNode($nodeID))
             {
-                $ft = new FastTraverse();
-                $nodes = $ft->getParents($this->get('IdNode'));
+                $nodes = FastTraverse::get_parents($this->get('IdNode'), 'Name');
                 if ($nodes)
                 {
                     $path = '';
-                    $levels = count($nodes);
-                    for ($cont = 0; $cont < $levels; $cont++)
+                    foreach ($nodes as $parentId => $name)
                     {
-                        $parentId = $nodes[$cont][0];
                         if ($nodeReplace and $parentId == $nodeReplace->GetID())
                             $nodeName = $nodeReplace->GetNodeName();
                         else
-                        {
-                            $node = new Node($parentId);
-                            $nodeName = $node->GetNodeName();
-                        }
+                            $nodeName = $name;
                         $path = '/' . $nodeName . $path;
                         if ($parentId == $nodeID)
                             break;
@@ -728,13 +722,12 @@ class Node extends NodesOrm
         $this->ClearError();
         if ($this->get('IdNode') > 0) {
             
-            $ft = new FastTraverse();
-            $nodes = $ft->getParents($this->get('IdNode'));
+            $nodes = FastTraverse::get_parents($this->get('IdNode'));
             if ($nodes === false)
                 return false;
-            foreach ($nodes as $parentId)
+            foreach ($nodes as $parentId => $level)
             {
-                if ($parentId[0] == $nodeID)
+                if ($parentId == $nodeID)
                     return true;
             }
             return false;
@@ -753,19 +746,12 @@ class Node extends NodesOrm
         $this->ClearError();
         if ($this->get('IdNode') > 0)
         {
-            $ft = new FastTraverse();
-            $nodes = $ft->getParents($this->get('IdNode'));
+            $nodes = FastTraverse::get_parents($this->get('IdNode'), 'IdNodeType');
             if ($nodes === false)
                 return false;
-            foreach ($nodes as $parentId)
+            foreach ($nodes as $idNodeType)
             {
-                $node = new Node($parentId[0]);
-                if (!$node->GetID())
-                {
-                    $this->SetError(1);
-                    return false;
-                }
-                if ($node->GetNodeType() == $nodeTypeID)
+                if ($idNodeType == $nodeTypeID)
                     return true;
             }
             return false;
@@ -782,21 +768,12 @@ class Node extends NodesOrm
         $this->ClearError();
         if ($this->get('IdNode') > 0)
         {
-            $ft = new FastTraverse();
-            $nodes = $ft->getParents($node->get('IdNode'));
+            $nodes = FastTraverse::get_parents($node->get('IdNode'), 'idNodeType');
             if ($nodes === false)
                 return false;
-            $levels = count($nodes);
-            for ($cont = 0; $cont < $levels; $cont++)
+            foreach ($nodes as $idNodeType)
             {
-                $parentId = $nodes[$cont][0];
-                $node = new Node($parentId);
-                if (!$node->GetID())
-                {
-                    $this->SetError(1);
-                    return false;
-                }
-                $parentNodeType = new NodeType($node->get('IdNodeType'));
+                $parentNodeType = new NodeType($idNodeType);
                 if ($parentNodeType->get('CanAttachGroups'))
                     return $node->get('IdNode');
             }
@@ -2354,7 +2331,7 @@ class Node extends NodesOrm
             return $db->getValue('IdNode');
         }
 
-        Logger::warning(sprintf(_("The nodetype %s could not be obtained for node "), $type) . $this->get('IdNode'));
+        Logger::error(sprintf(_("The nodetype %s could not be obtained for node "), $type) . $this->get('IdNode'));
         return NULL;
     }
 
