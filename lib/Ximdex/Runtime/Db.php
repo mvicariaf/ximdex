@@ -113,7 +113,15 @@ class Db
 
         $this->rows = array();
 
-        $this->stm = $this->db->query($this->sql, \PDO::FETCH_ASSOC);
+        try
+        {
+            $this->stm = $this->db->query($this->sql, \PDO::FETCH_ASSOC);
+        }
+        catch (\PDOException $e)
+        {
+            if (isset($GLOBALS['InBatchProcess']) and $GLOBALS['InBatchProcess'])
+                echo $e->getMessage() . PHP_EOL;
+        }
         
         if ($this->stm === false) {
             
@@ -183,7 +191,15 @@ class Db
         $this->newID = null;
 
         // Change to prepare to obtain num rows
-        $res = $this->db->exec($this->sql);
+        try
+        {
+            $res = $this->db->exec($this->sql);
+        }
+        catch (\PDOException $e)
+        {
+            if (isset($GLOBALS['InBatchProcess']) and $GLOBALS['InBatchProcess'])
+                echo $e->getMessage() . PHP_EOL;
+        }
         if ($res !== false) {
             $this->newID = $this->db->lastInsertId();
             $this->numRows = $res;
