@@ -60,11 +60,8 @@ class Automatic
         $this->stopperFilePath = App::getValue("AppRoot") . App::getValue("TempRoot") . "/automatic.stop";
 
         $this->mutex = new Mutex(App::getValue("AppRoot") . App::getValue("TempRoot") . "/generate.lck");
-        if (!$this->mutex->acquire()) {
-            Logger::fatal("Automatic previo en ejecucion");
-        }
-        $this->now = time();
 
+        $this->now = time();
         $this->minHourFuelle = mkTime(App::getValue('StartCheckNoFuelle'),
             0, 0, date('m', $this->now), date('d', $this->now), date('Y', $this->now));
         $this->maxHourFuelle = mktime(App::getValue('EndCheckNoFuelle'),
@@ -82,6 +79,11 @@ class Automatic
 
     function process($colectors = NULL)
     {
+        if (!$this->mutex->acquire()) {
+            Logger::fatal("Automatic previo en ejecucion");
+            die();
+        }
+        
         // Si son horas se obtienen los colectores con fuelle
 
         $colectoresConFuelle = array();
