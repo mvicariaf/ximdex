@@ -46,12 +46,14 @@ var RMXimdexTool = Object.xo_create(XimdocTool, {
 		$("[src*='@@@RMximdex.dotdot']", $('body', xslResult)[0]).each(function(index, elem) {
 			var path = unescape($(elem).attr('src'));
 			path = this.editor.getDotDotPath() + path.replace(/@@@RMximdex.dotdot\((.*)\)@@@/ig, "$1");
+			path += '?token=' + Math.random();
 			$(elem).attr('src', path);
 		}.bind(this));
 
 		$("link[href*='@@@RMximdex.dotdot']", $('html', xslResult)[0]).each(function(index, elem) {
 			var path = unescape($(elem).attr('href'));
 			path = this.editor.getDotDotPath() + path.replace(/@@@RMximdex.dotdot\((.*)\)@@@/ig, "$1");
+			path += '?token=' + Math.random();
 			$(elem).attr('href', path);
 		}.bind(this));
 
@@ -60,6 +62,7 @@ var RMXimdexTool = Object.xo_create(XimdocTool, {
 			var targetid = unescape($(elem).attr('src'));
 			targetid = targetid.replace(/@@@RMximdex.pathto\((.*)\)@@@/ig, "$1");
 			var path = '%s?expresion=%s&action=filemapper&method=nodeFromExpresion'.printf(X.restUrl, targetid);
+			path += '&token=' + Math.random();
 			$(elem).attr('src', path);
 		});
 

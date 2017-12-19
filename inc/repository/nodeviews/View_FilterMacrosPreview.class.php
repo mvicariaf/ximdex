@@ -31,36 +31,16 @@ use Ximdex\Models\Node;
 use Ximdex\Parsers\ParsingPathTo;
 use Ximdex\Runtime\App;
 
-
 ModulesManager::file('/inc/PAS_Conector.class.php', 'ximPAS');
+
 require_once(XIMDEX_ROOT_PATH . '/inc/repository/nodeviews/Abstract_View.class.php');
 require_once(XIMDEX_ROOT_PATH . '/inc/repository/nodeviews/View_FilterMacros.class.php');
 require_once(XIMDEX_ROOT_PATH . '/inc/repository/nodeviews/Interface_View.class.php');
 
 class View_FilterMacrosPreview extends View_FilterMacros implements Interface_View
 {
-
     private $_nodeTypeName = NULL;
     private $mode = NULL;
-
-    /**
-     * Main method. Get a pointer content file and return a new transformed content file. This probably cames from Transformer (View_XSLT), so will be the renderized content.
-     * @param  int $idVersion Node version
-     * @param  string $pointer file name with the content to transform
-     * @param  array $args Params about the current node
-     * @return string file name with the transformed content.
-     */
-    public function transform($idVersion = NULL, $pointer = NULL, $args = NULL)
-    {
-
-        //Check the conditions
-        if (!$this->initializeParams($args, $idVersion))
-            return NULL;
-
-        $content = $this->transformFromPointer($pointer);
-        //Return the pointer to the transformed content.
-        return $this->storeTmpContent($content);
-    }
 
     /**
      * Initialize params from transformation args
@@ -70,46 +50,27 @@ class View_FilterMacrosPreview extends View_FilterMacros implements Interface_Vi
      */
     protected function initializeParams($args, $idVersion)
     {
-
         $this->mode = (isset($args['MODE']) && $args['MODE'] == 'dinamic') ? 'dinamic' : 'static';
-
-        if (!$this->_setNode($idVersion, $args))
-            return NULL;
-
-        if (!$this->_setIdChannel($args))
-            return NULL;
-
-        if (!$this->_setServer($args))
-            return NULL;
-
-        if (!$this->_setServerNode($args))
-            return NULL;
-
+        
         if (!$this->_setIdSection($args))
             return NULL;
 
-        if (!$this->_setProjectNode($args))
-            return NULL;
-
-        if (!$this->_setDepth($args))
-            return NULL;
-
-        if (!$this->_setNodeName($args))
-            return NULL;
-
-        return true;
+        return parent::initializeParams($args, $idVersion);
     }
 
     /**
      * Load the node param from an idVersion.
      * @param int $idVersion Version id
+     * @param array $args
      * @return boolean True if exists node for selected version or the current node.
      */
     protected function _setNode($idVersion = NULL, $args = NULL)
     {
-
         if (is_null($idVersion)) {
-            if (array_key_exists('NODETYPENAME', $args)) {
+            
+            if ($this->idNode)
+                return parent::_setNode();
+            elseif (array_key_exists('NODETYPENAME', $args)) {
                 $this->_nodeTypeName = $args['NODETYPENAME'];
             }
         } else {
@@ -141,7 +102,6 @@ class View_FilterMacrosPreview extends View_FilterMacros implements Interface_Vi
 
     private function getSectionPath($matches)
     {
-
         //Getting section from parent function.
         $section = $this->getSectionNode($matches[1]);
         if (!$section) {
@@ -154,23 +114,9 @@ class View_FilterMacrosPreview extends View_FilterMacros implements Interface_Vi
 
     private function getdotdotpath($matches)
     {
-
         $section = new Node($this->_idSection);
         $sectionPath = $section->class->GetNodeURL() . "/";
-
-        if ($this->_node != null) {
-            if ($this->_node->nodeType->geddt('Name') == 'XimNewsNewLanguage') {
-                $sectionPath .= 'news/';
-            }
-        } else if ($this->_nodeTypeName != null) {
-            if ($this->_nodeTypeName == 'XimNewsNewLanguage') {
-                $sectionPath .= 'news/';
-            }
-        } else {
-            Logger::error("VIEW FILTERMACROSPREVIEW:no se ha podido determinar si se trata de un node de tipo XimNewsNewLanguage");
-        }
-
-        $targetPath = $matches[1];
+        $targetPath = $matches[1] . '?token=' . uniqid();
         $dotdot = str_repeat('../', $this->_depth - 2);
         return $sectionPath . $dotdot . $targetPath;
     }
@@ -178,24 +124,28 @@ class View_FilterMacrosPreview extends View_FilterMacros implements Interface_Vi
 
     private function getLinkPath($matches)
     {
-
         //Get parentesis content
         $pathToParams = $matches[1];
         // Link target-node
         $parserPathTo = new ParsingPathTo();
-        $parserPathTo->parsePathTo($pathToParams);
+        if (!$parserPathTo->parsePathTo($pathToParams, $this->idNode))
+        {
+            Logger::error('Parse PathTo is not working for: ' . $pathToParams);
+            return false;
+        }
 
         $res["idNode"] = $parserPathTo->getIdNode();
         $res["pathMethod"] = $parserPathTo->getPathMethod();
         $res["channel"] = $parserPathTo->getChannel();
-
-        if (!$res || !is_array($res) || !count($res)) {
-            return '';
-        } else {
-            $idNode = $res["idNode"];
-            $idTargetChannel = (count($res) == 3 && isset($res["channel"])) ? $res["channel"] : NULL;
-
-        }
+        
+        $idNode = $res["idNode"];
+        
+        if ($res["channel"])
+            $idTargetChannel = $res["channel"];
+        elseif ($this->idChannel)
+            $idTargetChannel = $this->idChannel;
+        else
+            $idTargetChannel = null;
 
         $targetNode = new Node($idNode);
         if (!$targetNode->get('IdNode')) {
@@ -223,7 +173,10 @@ class View_FilterMacrosPreview extends View_FilterMacros implements Interface_Vi
                 return $query->getPage() . $query->buildWith(array('nodeid' => $idNode, 'channelid' => $idTargetChannel));
             }
         } else {
-            return $targetNode->class->GetNodeURL();
+            
+            // generate the URL to the filemapper action
+            $url = App::getValue('UrlRoot') . '/?expresion=' . (($idNode) ? $idNode : $pathToParams) . '&action=filemapper&method=nodeFromExpresion&token=' . uniqid();
+            return $url;
         }
     }
 

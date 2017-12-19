@@ -56,7 +56,7 @@ class NodeDependencies
         $res = $this->dbObj->Query("SELECT * FROM NodeDependencies WHERE IdNode = '$idSource' and IdResource = '$idTarget' and IdChannel = '$idChannel'");
         if ($res === false)
             return false;
-        if (!$this->dbObj->EOF)
+        if ($this->dbObj->numRows)
         {
             //dependencie exists already
             return true;

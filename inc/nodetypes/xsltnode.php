@@ -171,11 +171,9 @@ class xsltnode extends FileNode
      * @param Node $section
      * @param Node $node
      * @param DepsManager $depsMngr
-     * @param FastTraverse $ft
      * @return boolean
      */
-    public function rel_include_templates_to_documents_folders(Node $section, Node $node = null, DepsManager $depsMngr = null
-            , FastTraverse $ft = null)
+    public function rel_include_templates_to_documents_folders(Node $section, Node $node = null, DepsManager $depsMngr = null)
     {
         if (!$depsMngr)
             Logger::info('Making a relation between documents section and templates with section ' . $section->GetID());
@@ -218,9 +216,7 @@ class xsltnode extends FileNode
             }
         }
         // get the children nodes of the current section
-        if (!$ft)
-            $ft = new FastTraverse();
-        $nodes = $ft->getChildren($section->GetID(), true, 1);
+        $nodes = FastTraverse::get_children($section->GetID(), true, 1);
         if ($nodes === false)
         {
             $this->messages->add('Cannot get children nodes from node: ' . $section->GetID() . ' in reload templates include files process'
@@ -690,12 +686,12 @@ class xsltnode extends FileNode
      * @param Node $node
      * @param array $priorTemplates
      * @param int $projectId
-     * @param FastTraverse $ft
+     * @param bool $init
      * @return boolean
      */
-    public function reload_templates_include(Node $node, array $priorTemplates = array(), int $projectId = null, FastTraverse $ft = null)
+    public function reload_templates_include(Node $node, array $priorTemplates = array(), int $projectId = null, bool $init = true)
     {
-        if (!$ft)
+        if ($init)
         {
             // only project, servers and section/subsections can storage template folders
             if ($node->GetNodeType() != Ximdex\Services\NodeType::PROJECTS and $node->GetNodeType() != Ximdex\Services\NodeType::PROJECT 
@@ -706,7 +702,7 @@ class xsltnode extends FileNode
             }
             
             //get full children nodes from the node given (only the first time)
-            $ft = new FastTraverse();
+            $init = false;
         }
         
         // look for templates folder
@@ -763,7 +759,7 @@ class xsltnode extends FileNode
         }
         
         // get children of the node with its node types
-        $nodes = $ft->getChildren($node->GetID(), true, 1);
+        $nodes = FastTraverse::get_children($node->GetID(), true, 1);
         if ($nodes === false)
         {
             $this->messages->add('Cannot get children nodes from node: ' . $node->GetID() . ' in reload templates include files process', MSG_TYPE_ERROR);
@@ -779,7 +775,7 @@ class xsltnode extends FileNode
             {
                 // call in recursive mode with the child node
                 $childNode = new Node($idChildNode);
-                $res = $this->reload_templates_include($childNode, $priorTemplates, $projectId, $ft);
+                $res = $this->reload_templates_include($childNode, $priorTemplates, $projectId, $init);
                 if ($res === false)
                     return false;
             }

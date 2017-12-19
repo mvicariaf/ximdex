@@ -25,6 +25,7 @@
  */
 
 
+use Ximdex\Logger;
 use Ximdex\Models\Channel;
 use Ximdex\Models\Node;
 use Ximdex\Models\StructuredDocument;
@@ -46,6 +47,9 @@ class Action_prevdoc extends ActionAbstract
 
     function index () {
 
+        // change the logs output to preview file
+        Logger::setActiveLog('preview');
+        
     	// Initializes variables:
 		$args = array();
 
@@ -167,13 +171,14 @@ class Action_prevdoc extends ActionAbstract
 		{
     		// Specific FilterMacros View for previsuals:
     		$viewFilterMacrosPreview = new View_FilterMacrosPreview();
-    		$file = $viewFilterMacrosPreview->transform(NULL, $content, $args);
+    		$file = $viewFilterMacrosPreview->transform(NULL, $content, $args, $idNode, $idChannel);
     		$hash = basename($file);
     
     		if (!empty($showprev)) {
     			$this->request->setParam('hash', $hash);
     			$this->prevdoc();
-    			return;
+    			Logger::setActiveLog();
+    			return true;
     		}
     
     		$queryManager = \Ximdex\Runtime\App::get('\Ximdex\Utils\QueryManager');
@@ -181,10 +186,13 @@ class Action_prevdoc extends ActionAbstract
     		
     		if ($json == 'json') {
     		    $this->sendJSON(array('prevUrl' => $prevUrl));
-    		    return;
+    		    Logger::setActiveLog();
+    		    return true;
             }
             $this->render(array('prevUrl' => $prevUrl), 'index', 'only_template.tpl');
 		}
+		Logger::setActiveLog();
+		return true;
     }
 
     public function prevdoc() {

@@ -35,7 +35,7 @@ use Ximdex\Parsers\ParsingPathTo;
 use Ximdex\Runtime\App;
 use Ximdex\Utils\Sync\SynchroFacade;
 
- ModulesManager::file('/inc/PAS_Conector.class.php', 'ximPAS');
+ModulesManager::file('/inc/PAS_Conector.class.php', 'ximPAS');
 ModulesManager::file('/inc/repository/nodeviews/Abstract_View.class.php');
 ModulesManager::file('/inc/repository/nodeviews/Interface_View.class.php');
 
@@ -51,6 +51,10 @@ class View_FilterMacros extends Abstract_View implements Interface_View
     protected $_depth = NULL;
     protected $_idSection = NULL;
     protected $_nodeName = "";
+    
+    protected $idNode;
+    protected $idChannel;
+    
     const MACRO_SERVERNAME = "/@@@RMximdex\.servername\(\)@@@/";
     const MACRO_PROJECTNAME = "/@@@RMximdex\.projectname\(\)@@@/";
     const MACRO_NODENAME = "/@@@RMximdex\.nodename\(\)@@@/";
@@ -65,14 +69,18 @@ class View_FilterMacros extends Abstract_View implements Interface_View
 
     /**
      * Main method. Get a pointer content file and return a new transformed content file. This probably cames from Transformer (View_XSLT), so will be the renderized content.
-     * @param  int $idVersion Node version
-     * @param  string $pointer file name with the content to transform
-     * @param  array $args Params about the current node
+     * @param int $idVersion Node version
+     * @param string $pointer file name with the content to transform
+     * @param array $args Params about the current node
+     * @param int $idNode
+     * @param int $idChannel
      * @return string file name with the transformed content.
      */
-    public function transform($idVersion = NULL, $pointer = NULL, $args = NULL)
+    public function transform($idVersion = NULL, $pointer = NULL, $args = NULL, int $idNode = null, int $idChannel = null)
     {
-
+        $this->idNode = $idNode;
+        $this->idChannel = $idChannel;
+        
         //Check the conditions
         if (!$this->initializeParams($args, $idVersion))
             return NULL;
@@ -90,7 +98,7 @@ class View_FilterMacros extends Abstract_View implements Interface_View
      */
     protected function initializeParams($args, $idVersion)
     {
-        if (!$this->_setNode($idVersion))
+        if (!$this->_setNode($idVersion, $args))
             return NULL;
 
         if (!$this->_setIdChannel($args))
@@ -117,27 +125,35 @@ class View_FilterMacros extends Abstract_View implements Interface_View
     /**
      * Load the node param from an idVersion.
      * @param int $idVersion Version id
+     * @param array $args
      * @return boolean True if exists node for selected version or the current node.
      */
-    protected function _setNode($idVersion = NULL)
+    protected function _setNode($idVersion = NULL, $args = null)
     {
-
-        if (!is_null($idVersion)) {
+        if ($this->idNode)
+        {
+            $this->_node = new Node($this->idNode);
+            if (!$this->_node->GetID())
+            {
+                Logger::error('VIEW FILTERMACROS: The node you are trying to convert does not exist: ' . $this->idNode);
+                return false;
+            }
+        }
+        elseif (!is_null($idVersion)) {
+            
             $version = new Version($idVersion);
-            if (!($version->get('IdVersion') > 0)) {
-                Logger::error(
-                    'VIEW FILTERMACROS: Se ha cargado una versión incorrecta (' . $idVersion .
-                    ')');
-                return NULL;
+            if (!$version->get('IdVersion')) {
+                
+                Logger::error('VIEW FILTERMACROS: An incorrect version has been loaded (' . $idVersion .')');
+                return false;
             }
-
             $this->_node = new Node($version->get('IdNode'));
-            if (!($this->_node->get('IdNode') > 0)) {
-                Logger::error(
-                    'VIEW FILTERMACROS: El nodo que se está intentando convertir no existe: ' .
-                    $version->get('IdNode'));
-                return NULL;
+            if (!$this->_node->get('IdNode')) {
+                
+                Logger::error('VIEW FILTERMACROS: The node you are trying to convert does not exist: ' . $version->get('IdNode'));
+                return false;
             }
+            $this->idNode = $this->_node->GetID();
         }
 
         return true;
@@ -324,7 +340,7 @@ class View_FilterMacros extends Abstract_View implements Interface_View
 
         $content = preg_replace_callback(self::MACRO_DOTDOT,
             array($this, 'getdotdotpath'), $content);
-
+        
         //Pathto
         $content = preg_replace_callback(self::MACRO_PATHTO,
             array($this, 'getLinkPath'), $content);
@@ -449,23 +465,29 @@ class View_FilterMacros extends Abstract_View implements Interface_View
 
     private function getLinkPath($matches, $forceAbsolute = false)
     {
-
         $absolute = $relative = false;
         //Get parentesis content
         $pathToParams = $matches[1];
         $parserPathTo = new ParsingPathTo();
-        $parserPathTo->parsePathTo($pathToParams, $this->_node->GetID());
+        if (!$parserPathTo->parsePathTo($pathToParams, $this->idNode))
+        {
+            Logger::error('Parse PathTo is not working for: ' . $pathToParams);
+            return false;
+        }
 
         $res["idNode"] = $parserPathTo->getIdNode();
         $res["pathMethod"] = $parserPathTo->getPathMethod();
         $res["channel"] = $parserPathTo->getChannel();
-
-        if (!$res || !is_array($res) || !count($res)) {
-            return '';
-        } else {
-            $idNode = $res["idNode"];
-            $idTargetChannel = (count($res) == 3 && isset($res["channel"])) ? $res["channel"] : NULL;
-        }
+        
+        $idNode = $res["idNode"];
+        
+        if ($res["channel"])
+            $idTargetChannel = $res["channel"];
+        elseif ($this->idChannel)
+            $idTargetChannel = $this->idChannel;
+        else
+            $idTargetChannel = null;
+            
         $targetNode = new Node($idNode);
         $nodeFrameManager = new NodeFrameManager();
         $nodeFrame = $nodeFrameManager->getNodeFramesInTime($idNode, NULL, time());

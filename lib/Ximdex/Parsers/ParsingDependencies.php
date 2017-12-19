@@ -343,7 +343,6 @@ class ParsingDependencies
         //Add dependencies between nodes for every channel in NodeDependencies
         if (self::addIntoNodeDependencies($idNode, $pathToByChannel) === false)
             return false;
-        unset($pathToByChannel);
         return self::addDependencies($node, $links) ? $links : false;
     }
 
@@ -668,42 +667,31 @@ class ParsingDependencies
     public static function getPathTo($content, $nodeId, $test = false)
     {
         preg_match_all("/@@@RMximdex\.pathto\(([^\)]*)\)@@@/", $content, $matches);
-        if ($test)
+        $links = array();
+        if (count($matches[1]))
         {
-            if (count($matches[1]))
+            $node = new Node($nodeId);
+            $server = $node->getServer();
+            $parserPathTo = new ParsingPathTo();
+            foreach ($matches[1] as $pathTo)
             {
-                $parserPathTo = new ParsingPathTo();
-                foreach ($matches[1] as $pathTo)
+                // if the document is a template in the project templates node, the resources in the macros (not nodeId given) cannot be obtained
+                if (($server !== null or is_numeric($pathTo)) 
+                        and ($parserPathTo->parsePathTo($pathTo, $nodeId) === false))
                 {
-                    // avoid check no nodes (i.e. {@a_enlaceid_url})
-                    if ($pathTo[0] == '{')
-                        continue;
-                    $node = new Node($pathTo);
-                    if (!$node->GetID())
+                    $error = 'The document or its dependencies references a non existant node or resource (' . $pathTo 
+                            . ') in a RMximdex.pathto directive';
+                    Logger::error($error);
+                    if ($test)
                     {
-                        $error = 'The document or its dependencies references a non existant node ' . $pathTo . ' in a RMximdex.pathto directive';
-                        Logger::error($error);
                         $GLOBALS['parsingDependenciesError'] = $error;
                         return false;
                     }
                 }
+                $links[$parserPathTo->getIdNode()] = $parserPathTo->getIdNode();
             }
-            return true;
         }
-        else
-        {
-            $links = array();
-            if (count($matches[1]))
-            {
-                $parserPathTo = new ParsingPathTo();
-                foreach ($matches[1] as $pathTo)
-                {
-                    $parserPathTo->parsePathTo($pathTo, $nodeId);
-                    $links[$parserPathTo->getIdNode()] = $parserPathTo->getIdNode();
-                }
-            }
-            return $links;
-        }
+        return $links;
     }
 
     /**
